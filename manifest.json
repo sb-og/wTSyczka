@@ -1,0 +1,15 @@
+{
+    "manifest_version": 3,
+    "name": "Tester",
+    "description": "By: Szymon Bogus",
+    "version": "1.0",
+    "permissions": [
+        "storage",
+        "activeTab",
+        "scripting"
+    ],
+    "action": {
+        "default_popup": "index.html",
+        "default_icon": "images/icon.png"
+    }
+}
