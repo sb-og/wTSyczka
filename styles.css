@@ -1,10 +1,27 @@
 :root {
+    --background-color: #eaf2ff;
+    --secondary-color: #beddff;
+    --text-color: #000000;
+    --accent-color: #867ff3;
+}
+:root.dark-mode {
     --background-color: #2a5291;
     --secondary-color: #175fb1;
     --text-color: #eef0e4;
     --accent-color: #000000;
 }
-
+.navbar-button img.dark-mode {
+    height: 20px;
+    width: 20px;
+    filter: invert(100%);
+}
+.titlebar{
+    margin-bottom: 12px;
+}
+.navbar-button img {
+    height: 20px;
+    width: 20px;
+}
 body {
     background-color: var(--background-color);
     color: var(--text-color);
@@ -12,6 +29,7 @@ body {
 
 .app {
     margin: 0;
+    margin-bottom: 12px;
 }
 
 h1 {
@@ -49,13 +67,10 @@ h1 {
     cursor: pointer;
     display: inline;
 }
-
-.navbar-button img {
-    height: 20px;
-    width: 20px;
-    filter: invert(100%);
+.navbar-button:hover {
+    transform: scale(1.15);
 }
-
+/* Podstawowy styl przycisku */
 .start-button {
     padding: 0;
     margin: 0;
@@ -63,4 +78,15 @@ h1 {
     width: 100%;
     background-color: var(--secondary-color);
     color: var(--text-color);
+    /* Ustawienie przejścia dla efektu powiększenia */
+    transition: transform 0.3s ease; /* Możesz dostosować czas przejścia */
+}
+
+/* Efekt powiększenia przycisku podczas najechania kursorem */
+.start-button:hover {
+    transform: scale(1.05); /* Powiększa przycisk o 5% */
+}
+.timerDisplay{
+    text-align: right;
+    min-height: 1.35em;
 }

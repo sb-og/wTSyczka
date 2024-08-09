@@ -2,7 +2,7 @@
     <div id="titlebar" class="titlebar">
         <h1>Tester</h1>
         <div id="navbar" class="navbar">
-            <button type="button" class="navbar-button">
+            <button type="button" id="clearButton" class="navbar-button">
                 <img src="images/clear.png" />
             </button>
             <button type="button" id="openSettings" class="navbar-button">
@@ -13,14 +13,17 @@
     <div class="app">
         <div id="userInput" class="userInput">
             <form id="initializeForm" class="standardForm">
+                <label for="link">Link do środowiska:</label>
                 <input id="link" class="link-input" placeholder="Link środowiska">
                 <button id="start" class="start-button" type="submit">Start</button>
             </form>
         </div>
         <div id="summaryOutput">
             <form id="outputForm">
+                <label for="output">Wynik:</label>
                 <input id="output">
             </form>
         </div>
+        <div id="timerDisplay" class="timerDisplay"></div>
     </div>
 </div>
