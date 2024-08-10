@@ -1,4 +1,4 @@
-console.log('Combined script - app.js loaded');
+console.log('app.js loaded');
 
 // Funkcja ładowania zawartości HTML do strony
 function loadPage(url) {
@@ -47,108 +47,77 @@ function addEventListeners() {
         });
     }
 
-    // Ładowanie danych z localStorage
-    const savedLink = localStorage.getItem('savedLink');
-    if (savedLink && linkInput) {
-        console.log('Link loaded from localStorage:', savedLink);
-        linkInput.value = savedLink;
-    }
+    // Obsługa menu kontekstowego
+    chrome.storage.local.get('savedLink', function (result) {
+        if (result.savedLink) {
+            console.log('Link loaded from chrome.storage:', result.savedLink);
+            linkInput.value = result.savedLink;
+            manageTimerUpdate();
+        } else {
+            console.log('No link found in chrome.storage');
+        }
+    });
+
+    // Ładowanie danych z chrome.storage.local
+    chrome.storage.local.get(['savedLink', 'startDate', 'timer', 'darkMode', 'username', 'password'], function (result) {
+        const savedLink = result.savedLink || '';
+        const darkMode = result.darkMode === true;
+        const timer = result.timer === true;
+        const username = result.username || '';
+        const password = result.password || '';
+
+        if (linkInput) {
+            linkInput.value = savedLink;
+            console.log('Link loaded from chrome.storage:', savedLink);
+        }
+
+        if (darkModeCheckbox) darkModeCheckbox.checked = darkMode;
+        if (timerCheckbox) timerCheckbox.checked = timer;
+        if (usernameInput) usernameInput.value = username;
+        if (passwordInput) passwordInput.value = password;
+
+        toggleMode(darkMode);
+    });
 
     // Przycisk czyszczenia
     if (clearButton) {
         clearButton.addEventListener('click', () => {
-            localStorage.setItem('savedLink', '');
+            chrome.storage.local.set({
+                'savedLink': '',
+                'startDate': '',
+            }, () => {
+                console.log('Start time cleared');
+                manageTimerUpdate();
+            });
+
             if (linkInput) linkInput.value = '';
-            // Ustawienie startDate na null w localStorage
-            localStorage.setItem('startDate', '');
-            console.log('Start time cleared');
-            manageTimerInterval();
         });
     }
 
     // Obsługa przycisku "Start"
     if (startButton) {
         startButton.addEventListener('click', (event) => {
-            startTimer();
+            chrome.runtime.sendMessage({ action: 'startTimer' }, (response) => {
+                if (response && response.status === 'success') {
+                    console.log('Timer start time updated');
+                    manageTimerUpdate(); // Przenieś tutaj aktualizację timera po otrzymaniu potwierdzenia
+                }
+            });
+
             event.preventDefault(); // Zapobieganie domyślnej akcji (przesyłanie formularza)
-            manageTimerInterval();
+
             const link = linkInput?.value || '';
             if (link) {
                 console.log('Link is valid, saving and opening it');
-                localStorage.setItem('savedLink', link);
-                window.open(link, '_blank');
+                chrome.storage.local.set({ 'savedLink': link }, () => {
+                    window.open(link, '_blank');
+                });
             } else {
                 console.log('Link is empty, showing alert');
                 alert('Proszę podać link.');
             }
         });
     }
-
-    // Obsługa timerDisplay
-    let startTime = null;
-    let timerIntervalId = null;
-
-    function startTimer() {
-        console.log('startTimer called');
-        startTime = new Date();
-        // Zapisz startTime do localStorage
-        localStorage.setItem('startDate', startTime.getTime());
-        console.log('Start time saved:', startTime);
-    }
-
-    function getElapsedTime(callback) {
-        const savedStartTime = localStorage.getItem('startDate');
-        const timerEnabled = localStorage.getItem('timer') === 'true';
-        // Sprawdź, czy timer jest ustawiony na true
-        if (timerEnabled) {
-            if (!savedStartTime) {
-                callback("Timer not started");
-                return;
-            }
-
-            const currentTime = new Date();
-            const elapsedTime = currentTime.getTime() - parseInt(savedStartTime, 10); // Czas w milisekundach
-
-            // Przekształcanie czasu na godziny, minuty i sekundy
-            const seconds = Math.floor((elapsedTime / 1000) % 60);
-            const minutes = Math.floor((elapsedTime / (1000 * 60)) % 60);
-            const hours = Math.floor((elapsedTime / (1000 * 60 * 60)) % 24);
-
-            callback(hours + 'h ' + minutes + 'm ' + seconds + 's');
-        } else {
-            callback("Timer not running");
-        }
-    }
-
-    function manageTimerInterval() {
-        const savedLink = localStorage.getItem('savedLink');
-        const timerEnabled = localStorage.getItem('timer') === 'true';
-
-        if (savedLink && timerEnabled) {
-            if (!timerIntervalId) {  // Sprawdź, czy interwał nie jest już ustawiony
-                timerIntervalId = setInterval(function () {
-                    getElapsedTime(function (elapsedTimeText) {
-                        if (timerDisplay) {
-                            timerDisplay.textContent = elapsedTimeText;
-                        }
-                    });
-                }, 1000);
-            }
-        } else {
-            if (timerIntervalId) {  // Sprawdź, czy interwał jest ustawiony
-                clearInterval(timerIntervalId);
-                timerIntervalId = null;
-                // Czyść wyświetlanie timera, gdy jest wyłączony
-                if (timerDisplay) {
-                    timerDisplay.textContent = '';
-                }
-            }
-            console.log('Link is not present in localStorage or timer is not enabled');
-        }
-    }
-
-    // Wywołanie funkcji zarządzającej timerem
-    manageTimerInterval();
 
     // Obsługa checkboxa Dark mode
     if (darkModeCheckbox) {
@@ -167,19 +136,6 @@ function addEventListeners() {
         }
     }
 
-    // Wczytanie zapisanych ustawień
-    const darkMode = localStorage.getItem('darkMode') === 'true';
-    const timer = localStorage.getItem('timer') === 'true';
-    const username = localStorage.getItem('username') || '';
-    const password = localStorage.getItem('password') || '';
-
-    if (darkModeCheckbox) darkModeCheckbox.checked = darkMode;
-    if (timerCheckbox) timerCheckbox.checked = timer;
-    if (usernameInput) usernameInput.value = username;
-    if (passwordInput) passwordInput.value = password;
-
-    toggleMode(darkMode);
-
     // Przycisk zapisu
     if (saveButton) {
         saveButton.addEventListener('click', () => {
@@ -187,13 +143,67 @@ function addEventListeners() {
             const timer = timerCheckbox?.checked ?? false;
             const username = usernameInput?.value ?? '';
             const password = passwordInput?.value ?? '';
-            localStorage.setItem('darkMode', darkMode);
-            localStorage.setItem('timer', timer);
-            localStorage.setItem('username', username);
-            localStorage.setItem('password', password);
-            console.log('Settings saved:', { darkMode, timer, username, password });
-            toggleMode(darkMode); // Zastosuj tryb ciemny na podstawie zapisanych ustawień
+            chrome.storage.local.set({
+                'darkMode': darkMode,
+                'timer': timer,
+                'username': username,
+                'password': password
+            }, () => {
+                console.log('Settings saved:', { darkMode, timer, username, password });
+                toggleMode(darkMode); // Zastosuj tryb ciemny na podstawie zapisanych ustawień
+            });
         });
+    }
+
+    // Funkcja aktualizacji timera
+    function manageTimerUpdate() {
+        chrome.storage.local.get(['startDate', 'timer', 'savedLink'], function (result) {
+            const savedStartTime = result.startDate;
+            const timerEnabled = result.timer === true;
+            const savedLink = result.savedLink;
+
+            if (timerEnabled && savedStartTime && savedLink) {
+                startTimerUpdate(savedStartTime);
+            } else {
+                stopTimerUpdate();
+            }
+        });
+    }
+
+    // Funkcja rozpoczęcia aktualizacji timera
+    let timerIntervalId = null;
+
+    function startTimerUpdate(savedStartTime) {
+        if (!timerIntervalId) {  // Sprawdź, czy interwał nie jest już ustawiony
+            timerIntervalId = setInterval(function () {
+                const currentTime = new Date().getTime();
+                const timeElapsed = currentTime - savedStartTime;
+    
+                const hours = Math.floor(timeElapsed / (1000 * 60 * 60));
+                const minutes = Math.floor((timeElapsed % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeElapsed % (1000 * 60)) / 1000);
+    
+                // Formatowanie w stylu hh:mm:ss
+                const formattedTime = 
+                    String(hours).padStart(2, '0') + ':' + 
+                    String(minutes).padStart(2, '0') + ':' + 
+                    String(seconds).padStart(2, '0');
+                
+                timerDisplay.textContent = formattedTime; // Aktualizowanie wyświetlacza timera
+    
+            }, 1000);
+            console.log('Timer updater initiated');
+        }
+    }
+
+    // Funkcja zatrzymania aktualizacji timera
+    function stopTimerUpdate() {
+        if (timerIntervalId) {
+            clearInterval(timerIntervalId);
+            timerIntervalId = null;
+            timerDisplay.textContent = ''; // Zresetuj wyświetlacz po zatrzymaniu timera
+            console.log('Timer updater stopped');
+        }
     }
 
     console.log('Event listeners added');
