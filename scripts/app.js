@@ -82,6 +82,7 @@ function addEventListeners() {
     // Przycisk czyszczenia
     if (clearButton) {
         clearButton.addEventListener('click', () => {
+            // Ustawienie wartości 'savedLink' i 'startDate' na puste
             chrome.storage.local.set({
                 'savedLink': '',
                 'startDate': '',
@@ -90,31 +91,41 @@ function addEventListeners() {
                 manageTimerUpdate();
             });
 
+            // Czyszczenie pola linku, jeśli istnieje
             if (linkInput) linkInput.value = '';
+
+            // Wyczyść 'isTabOpen', 'savedLink', i 'startDate'
+            chrome.storage.local.remove(['isTabOpen', 'savedLink', 'startDate'], function () {
+                console.log('isTabOpen, savedLink, and startDate cleared');
+            });
         });
     }
 
-    // Obsługa przycisku "Start"
     if (startButton) {
         startButton.addEventListener('click', (event) => {
-            chrome.runtime.sendMessage({ action: 'startTimer' }, (response) => {
-                if (response && response.status === 'success') {
-                    console.log('Timer start time updated');
-                    manageTimerUpdate(); // Przenieś tutaj aktualizację timera po otrzymaniu potwierdzenia
-                }
-            });
-
             event.preventDefault(); // Zapobieganie domyślnej akcji (przesyłanie formularza)
 
             const link = linkInput?.value || '';
             if (link) {
-                console.log('Link is valid, saving and opening it');
-                chrome.storage.local.set({ 'savedLink': link }, () => {
-                    window.open(link, '_blank');
+                console.log('Link is valid, sending message to background script');
+                // Wyślij wiadomość do background.js, aby otworzył nową kartę
+                chrome.runtime.sendMessage({ action: 'openNewTab', url: link }, (response) => {
+                    if (response && response.status === 'success') {
+                        console.log('Background script is handling the link.');
+                        manageTimerUpdate(); // Przenieś tutaj aktualizację timera po otrzymaniu potwierdzenia
+                    }
                 });
             } else {
                 console.log('Link is empty, showing alert');
-                alert('Proszę podać link.');
+                // Wstrzyknij prosty alert do aktywnej karty
+                chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+                    chrome.scripting.executeScript({
+                        target: { tabId: tabs[0].id },
+                        func: function () {
+                            alert('Proszę wprowadzić link');
+                        }
+                    });
+                });
             }
         });
     }
@@ -178,20 +189,20 @@ function addEventListeners() {
             timerIntervalId = setInterval(function () {
                 const currentTime = new Date().getTime();
                 const timeElapsed = currentTime - savedStartTime;
-    
+
                 const hours = Math.floor(timeElapsed / (1000 * 60 * 60));
                 const minutes = Math.floor((timeElapsed % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((timeElapsed % (1000 * 60)) / 1000);
-    
+
                 // Formatowanie w stylu hh:mm:ss
-                const formattedTime = 
-                    String(hours).padStart(2, '0') + ':' + 
-                    String(minutes).padStart(2, '0') + ':' + 
+                const formattedTime =
+                    String(hours).padStart(2, '0') + ':' +
+                    String(minutes).padStart(2, '0') + ':' +
                     String(seconds).padStart(2, '0');
-                
+
                 timerDisplay.textContent = formattedTime; // Aktualizowanie wyświetlacza timera
-    
-            }, 1000);
+
+            }, 100);
             console.log('Timer updater initiated');
         }
     }
