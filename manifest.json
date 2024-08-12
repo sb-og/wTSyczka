@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "Tester",
+    "name": "TStester",
     "description": "By: Szymon Bogus",
     "version": "1.0",
     "permissions": [

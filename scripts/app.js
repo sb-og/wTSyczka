@@ -1,56 +1,48 @@
-// tsc scripts/app.ts
 console.log('app.ts loaded');
-
 // Funkcja ładowania zawartości HTML do strony
-function loadPage(url: string): void {
+function loadPage(url) {
     console.log('Loading page with URL:', url);
     fetch(url)
-        .then(response => response.text())
-        .then(data => {
-            console.log('Page content fetched');
-            const appElement = document.getElementById('app');
-            if (appElement) {
-                appElement.innerHTML = data;
-            }
-            addEventListeners(); // Dodaj nasłuchiwacze zdarzeń po załadowaniu zawartości
-        })
-        .catch(error => console.error('Error loading page:', error));
+        .then(function (response) { return response.text(); })
+        .then(function (data) {
+        console.log('Page content fetched');
+        var appElement = document.getElementById('app');
+        if (appElement) {
+            appElement.innerHTML = data;
+        }
+        addEventListeners(); // Dodaj nasłuchiwacze zdarzeń po załadowaniu zawartości
+    })
+        .catch(function (error) { return console.error('Error loading page:', error); });
 }
-
 // Funkcja dodająca nasłuchiwacze zdarzeń do elementów interfejsu
-function addEventListeners(): void {
+function addEventListeners() {
     console.log('Adding event listeners');
-
     // Definiowanie zmiennych dla elementów
-    const linkInput = document.getElementById('link') as HTMLInputElement | null;
-    const timerDisplay = document.getElementById('timerDisplay') as HTMLElement | null;
-    const openSettingsButton = document.getElementById('openSettings') as HTMLButtonElement | null;
-    const backButton = document.getElementById('backButton') as HTMLButtonElement | null;
-    const clearButton = document.getElementById('clearButton') as HTMLButtonElement | null;
-    const startButton = document.getElementById('start') as HTMLButtonElement | null;
-
-    const darkModeCheckbox = document.getElementById('darkModeCheckbox') as HTMLInputElement | null;
-    const timerCheckbox = document.getElementById('timerCheckbox') as HTMLInputElement | null;
-    const usernameInput = document.getElementById('usernameInput') as HTMLInputElement | null;
-    const passwordInput = document.getElementById('passwordInput') as HTMLInputElement | null;
-    const saveButton = document.getElementById('saveButton') as HTMLButtonElement | null;
-
+    var linkInput = document.getElementById('link');
+    var timerDisplay = document.getElementById('timerDisplay');
+    var openSettingsButton = document.getElementById('openSettings');
+    var backButton = document.getElementById('backButton');
+    var clearButton = document.getElementById('clearButton');
+    var startButton = document.getElementById('start');
+    var darkModeCheckbox = document.getElementById('darkModeCheckbox');
+    var timerCheckbox = document.getElementById('timerCheckbox');
+    var usernameInput = document.getElementById('usernameInput');
+    var passwordInput = document.getElementById('passwordInput');
+    var saveButton = document.getElementById('saveButton');
     // Obsługa przycisku otwierającego ustawienia
     if (openSettingsButton) {
-        openSettingsButton.addEventListener('click', () => {
+        openSettingsButton.addEventListener('click', function () {
             console.log('Open Settings button clicked');
             loadPage('settings.html');
         });
     }
-
     // Obsługa przycisku powrotu do strony głównej
     if (backButton) {
-        backButton.addEventListener('click', () => {
+        backButton.addEventListener('click', function () {
             console.log('Back button clicked');
             loadPage('mainpage.html');
         });
     }
-
     // Obsługa menu kontekstowego
     chrome.storage.local.get('savedLink', function (result) {
         if (result.savedLink) {
@@ -59,73 +51,71 @@ function addEventListeners(): void {
                 linkInput.value = result.savedLink;
             }
             manageTimerUpdate();
-        } else {
+        }
+        else {
             console.log('No link found in chrome.storage');
         }
     });
-
     // Ładowanie danych z chrome.storage.local
     chrome.storage.local.get(['savedLink', 'startDate', 'timer', 'darkMode', 'username', 'password'], function (result) {
-        const savedLink = result.savedLink || '';
-        const darkMode = result.darkMode === true;
-        const timer = result.timer === true;
-        const username = result.username || '';
-        const password = result.password || '';
-
+        var savedLink = result.savedLink || '';
+        var darkMode = result.darkMode === true;
+        var timer = result.timer === true;
+        var username = result.username || '';
+        var password = result.password || '';
         if (linkInput) {
             linkInput.value = savedLink;
             console.log('Link loaded from chrome.storage:', savedLink);
         }
-
-        if (darkModeCheckbox) darkModeCheckbox.checked = darkMode;
-        if (timerCheckbox) timerCheckbox.checked = timer;
-        if (usernameInput) usernameInput.value = username;
-        if (passwordInput) passwordInput.value = password;
-
+        if (darkModeCheckbox)
+            darkModeCheckbox.checked = darkMode;
+        if (timerCheckbox)
+            timerCheckbox.checked = timer;
+        if (usernameInput)
+            usernameInput.value = username;
+        if (passwordInput)
+            passwordInput.value = password;
         toggleMode(darkMode);
     });
-
     // Przycisk czyszczenia
     if (clearButton) {
-        clearButton.addEventListener('click', () => {
+        clearButton.addEventListener('click', function () {
             // Ustawienie wartości 'savedLink' i 'startDate' na puste
             chrome.storage.local.set({
                 'savedLink': '',
                 'startDate': '',
-            }, () => {
+            }, function () {
                 console.log('Start time cleared');
                 manageTimerUpdate();
             });
-
             // Czyszczenie pola linku, jeśli istnieje
-            if (linkInput) linkInput.value = '';
-
+            if (linkInput)
+                linkInput.value = '';
             // Wyczyść 'isTabOpen', 'savedLink', i 'startDate'
             chrome.storage.local.remove(['isTabOpen', 'savedLink', 'startDate'], function () {
                 console.log('isTabOpen, savedLink, and startDate cleared');
             });
         });
     }
-
     if (startButton) {
-        startButton.addEventListener('click', (event: Event) => {
+        startButton.addEventListener('click', function (event) {
             event.preventDefault(); // Zapobieganie domyślnej akcji (przesyłanie formularza)
-    
-            const link = linkInput?.value || '';
+            var link = (linkInput === null || linkInput === void 0 ? void 0 : linkInput.value) || '';
             if (link) {
                 console.log('Link is valid, sending message to background script');
                 // Wyślij wiadomość do background.js, aby otworzył nową kartę
-                chrome.runtime.sendMessage({ action: 'openNewTab', url: link }, (response) => {
+                chrome.runtime.sendMessage({ action: 'openNewTab', url: link }, function (response) {
                     if (response && response.status === 'success') {
                         console.log('Background script is handling the link.');
                         manageTimerUpdate(); // Przenieś tutaj aktualizację timera po otrzymaniu potwierdzenia
                     }
                 });
-            } else {
+            }
+            else {
                 console.log('Link is empty, showing alert');
                 // Wstrzyknij prosty alert do aktywnej karty
                 chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-                    const activeTab = tabs[0];
+                    var activeTab = tabs[0];
                     if (activeTab.id !== undefined) { // Sprawdzanie, czy tabId nie jest undefined
                         chrome.scripting.executeScript({
                             target: { tabId: activeTab.id },
@@ -133,95 +123,86 @@ function addEventListeners(): void {
                                 alert('Proszę wprowadzić link');
                             }
                         });
-                    } else {
+                    }
+                    else {
                         console.error('Nie można odnaleźć aktywnej karty.');
                     }
                 });
             }
         });
     }
-
     // Obsługa checkboxa Dark mode
     if (darkModeCheckbox) {
-        darkModeCheckbox.addEventListener('change', () => toggleMode());
+        darkModeCheckbox.addEventListener('change', function () { return toggleMode(); });
     }
-
     // Funkcja przełączania trybu ciemnego
-    function toggleMode(isDarkMode: boolean | null = null): void {
-        const rootElement = document.documentElement;
-        const isDarkModeEnabled = isDarkMode !== null ? isDarkMode : darkModeCheckbox?.checked;
-
+    function toggleMode(isDarkMode) {
+        if (isDarkMode === void 0) { isDarkMode = null; }
+        var rootElement = document.documentElement;
+        var isDarkModeEnabled = isDarkMode !== null ? isDarkMode : darkModeCheckbox === null || darkModeCheckbox === void 0 ? void 0 : darkModeCheckbox.checked;
         if (isDarkModeEnabled) {
             rootElement.classList.add('dark-mode');
-        } else {
+        }
+        else {
             rootElement.classList.remove('dark-mode');
         }
     }
-
     // Przycisk zapisu
     if (saveButton) {
-        saveButton.addEventListener('click', () => {
-            const darkMode = darkModeCheckbox?.checked ?? false;
-            const timer = timerCheckbox?.checked ?? false;
-            const username = usernameInput?.value ?? '';
-            const password = passwordInput?.value ?? '';
+        saveButton.addEventListener('click', function () {
+            var _a, _b, _c, _d;
+            var darkMode = (_a = darkModeCheckbox === null || darkModeCheckbox === void 0 ? void 0 : darkModeCheckbox.checked) !== null && _a !== void 0 ? _a : false;
+            var timer = (_b = timerCheckbox === null || timerCheckbox === void 0 ? void 0 : timerCheckbox.checked) !== null && _b !== void 0 ? _b : false;
+            var username = (_c = usernameInput === null || usernameInput === void 0 ? void 0 : usernameInput.value) !== null && _c !== void 0 ? _c : '';
+            var password = (_d = passwordInput === null || passwordInput === void 0 ? void 0 : passwordInput.value) !== null && _d !== void 0 ? _d : '';
             chrome.storage.local.set({
                 'darkMode': darkMode,
                 'timer': timer,
                 'username': username,
                 'password': password
-            }, () => {
-                console.log('Settings saved:', { darkMode, timer, username, password });
+            }, function () {
+                console.log('Settings saved:', { darkMode: darkMode, timer: timer, username: username, password: password });
                 toggleMode(darkMode); // Zastosuj tryb ciemny na podstawie zapisanych ustawień
             });
         });
     }
-
     // Funkcja aktualizacji timera
-    function manageTimerUpdate(): void {
+    function manageTimerUpdate() {
         chrome.storage.local.get(['startDate', 'timer', 'savedLink'], function (result) {
-            const savedStartTime = result.startDate;
-            const timerEnabled = result.timer === true;
-            const savedLink = result.savedLink;
-
+            var savedStartTime = result.startDate;
+            var timerEnabled = result.timer === true;
+            var savedLink = result.savedLink;
             if (timerEnabled && savedStartTime && savedLink) {
                 startTimerUpdate(savedStartTime);
-            } else {
+            }
+            else {
                 stopTimerUpdate();
             }
         });
     }
-
     // Funkcja rozpoczęcia aktualizacji timera
-    let timerIntervalId: number | null = null;
-
-    function startTimerUpdate(savedStartTime: number): void {
-        if (!timerIntervalId) {  // Sprawdź, czy interwał nie jest już ustawiony
+    var timerIntervalId = null;
+    function startTimerUpdate(savedStartTime) {
+        if (!timerIntervalId) { // Sprawdź, czy interwał nie jest już ustawiony
             timerIntervalId = window.setInterval(function () {
-                const currentTime = new Date().getTime();
-                const timeElapsed = currentTime - savedStartTime;
-
-                const hours = Math.floor(timeElapsed / (1000 * 60 * 60));
-                const minutes = Math.floor((timeElapsed % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((timeElapsed % (1000 * 60)) / 1000);
-
+                var currentTime = new Date().getTime();
+                var timeElapsed = currentTime - savedStartTime;
+                var hours = Math.floor(timeElapsed / (1000 * 60 * 60));
+                var minutes = Math.floor((timeElapsed % (1000 * 60 * 60)) / (1000 * 60));
+                var seconds = Math.floor((timeElapsed % (1000 * 60)) / 1000);
                 // Formatowanie w stylu hh:mm:ss
-                const formattedTime =
-                    String(hours).padStart(2, '0') + ':' +
+                var formattedTime = String(hours).padStart(2, '0') + ':' +
                     String(minutes).padStart(2, '0') + ':' +
                     String(seconds).padStart(2, '0');
-
                 if (timerDisplay) {
                     timerDisplay.textContent = formattedTime; // Aktualizowanie wyświetlacza timera
                 }
-
             }, 300);
             console.log('Timer updater initiated');
         }
     }
-
     // Funkcja zatrzymania aktualizacji timera
-    function stopTimerUpdate(): void {
+    function stopTimerUpdate() {
         if (timerIntervalId) {
             clearInterval(timerIntervalId);
             timerIntervalId = null;
@@ -231,12 +212,10 @@ function addEventListeners(): void {
             console.log('Timer updater stopped');
         }
     }
-
     console.log('Event listeners added');
 }
-
 // Inicjalizacja aplikacji
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function () {
     console.log('DOM fully loaded and parsed');
     loadPage('mainpage.html');
 });
